@@ -1,9 +1,13 @@
 import os
 import yfinance as yf
-from supabase import create_client
-from dotenv import load_dotenv
+from supabase import create_client, Client
 
-load_dotenv() # .env dosyasını okur
+# Sadece bilgisayarında çalışırken .env okur, bulutta hata verirse sessizce atlar.
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # API Bilgilerini değişkene aktar
 url = os.getenv("SUPABASE_URL")
