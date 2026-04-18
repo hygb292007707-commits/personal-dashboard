@@ -1,0 +1,29 @@
+name: Otomatik Mali Takip
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # Her sabah 06:00'da çalışır
+  workflow_dispatch: # İstersen GitHub üzerinden manuel de başlatabilirsin
+
+jobs:
+  check_mail:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodlari Cek
+        uses: actions/checkout@v4
+
+      - name: Python Kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Kutuphaneleri Yukle
+        run: pip install httpx python-dotenv
+
+      - name: Mailleri Tara ve Kaydet
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_PASS: ${{ secrets.GMAIL_PASS }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python backend/mail_check.py
