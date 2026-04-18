@@ -1,5 +1,5 @@
 import DashboardClient from '../components/DashboardClient';
-
+export const dynamic = 'force-dynamic';
 export default function Page() {
   return (
     <main className="flex-1 w-full min-h-screen bg-zinc-50 dark:bg-black">
