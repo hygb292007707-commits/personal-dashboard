@@ -20,11 +20,10 @@ jobs:
     - name: Kutuphaneler
       run: |
         python -m pip install --upgrade pip
-        pip install yfinance supabase
+        pip install yfinance supabase python-dotenv
 
     - name: Sync Calistir
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       run: python backend/sync.py
-      
