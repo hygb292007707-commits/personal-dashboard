@@ -41,24 +41,74 @@ def get_bank_emails():
             else:
                 body = msg.get_payload(decode=True).decode()
 
-            # 4. Verileri Ayıkla (Regex)
-            amount_match = re.search(r"(\d+,\d+)\s*TL", body)
-            place_match = re.search(r"Harcama Yeri:\s*([^\n\r.]+)", body)
+            # 4. Verileri Ayıkla (Regex) - ÇİFT YÖNLÜ MOTOR
+            
+            # Senaryo A: Harcama (Gider)
+            expense_place_match = re.search(r"Harcama Yeri:\s*([^\n\r.]+)", body)
+            expense_amount_match = re.search(r"(\d+,\d+)\s*TL", body)
+            
+            # Senaryo B: Gelen Para (Gelir) - Resmindeki formata göre
+            income_match = re.search(r"hesabınıza\s+(.*?)\s+tarafından.*?\s+([\d.,]+)\s*TL\s+gönderilmiştir", body, re.IGNORECASE)
 
-            if amount_match and place_match:
-                amount = float(amount_match.group(1).replace(",", "."))
-                place = place_match.group(1).strip()
+            row = None # Veritabanı paketi için boş değişken
+
+            if expense_place_match and expense_amount_match:
+                # Gider İşlemi
+                amount = float(expense_amount_match.group(1).replace(",", "."))
+                place = expense_place_match.group(1).strip()
                 
-                # 5. Veritabanına Gönderilecek Paketi Hazırla
-                # Veritabanına gönderilecek paket
+                # Akıllı Kategori Motoru
+                kategori_sozlugu = {
+                    "starbucks": "Keyif/Kahve", "migros": "Market", "a101": "Market", 
+                    "shell": "Ulaşım", "yemeksepeti": "Yemek", "getir": "Yemek"
+                }
+                category = "Diger"
+                for anahtar, atanacak in kategori_sozlugu.items():
+                    if anahtar in place.lower():
+                        category = atanacak
+                        break
+
                 row = {
                     "description": place,
                     "amount": amount,
-                    "type": "expense",
-                    "category": "Diger",
-                    "date": datetime.now().isoformat() # Şu anki tarih ve saati ekler
+                    "type": "expense", # Tip: GİDER
+                    "category": category,
+                    "date": datetime.now().isoformat()
+                }
+
+            elif income_match:
+                # Gelir İşlemi
+                sender = income_match.group(1).strip() # ÖZLEM KURT kısmını yakalar
+                # 1.000,00 formatını bilgisayarın anlayacağı 1000.00 formatına çevirir
+                amount_str = income_match.group(2).replace(".", "").replace(",", ".")
+                amount = float(amount_str)
+
+                row = {
+                    "description": f"Gelen Transfer: {sender}",
+                    "amount": amount,
+                    "type": "income", # Tip: GELİR
+                    "category": "Gelir",
+                    "date": datetime.now().isoformat()
+                }
+
+            # 5. Eğer eşleşme bulunduysa veritabanına gönder
+            if row:
+                url = f"{SUPABASE_URL}/rest/v1/finance_transactions"
+                headers = {
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_KEY}",
+                    "Content-Type": "application/json",
+                    "Prefer": "return=minimal"
                 }
                 
+                with httpx.Client() as client:
+                    response = client.post(url, json=row, headers=headers)
+                    if response.status_code in [200, 201]:
+                        print(f"VERİTABANINA İŞLENDİ: {row['type'].upper()} - {row['amount']} TL")
+                    else:
+                        print(f"HATA: {response.text}")
+            else:
+                print("Mail tarandı fakat uygun bir gelir/gider formatı bulunamadı.")
                 # 6. HTTP POST İsteği ile Doğrudan Kaydet
                 url = f"{SUPABASE_URL}/rest/v1/finance_transactions"
                 headers = {
