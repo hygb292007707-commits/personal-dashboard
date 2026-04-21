@@ -11,7 +11,8 @@ import { useLocalStorage } from '../lib/hooks/useLocalStorage';
 import { useTable } from '../lib/hooks/useTable';
 import { TABLES } from '../lib/supabase';
 import type { Task, CalendarEvent, FinanceState, Transaction } from '../lib/types';
-
+import LanguageToggle from '../components/LanguageToggle';
+import { useLanguage } from '../lib/hooks/LanguageContext';
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
 interface TimerPreset {
@@ -28,76 +29,76 @@ type Row = Record<string, unknown>;
 
 function taskFromRow(r: Row): Task {
   return {
-    id:                String(r.id),
-    title:             String(r.title),
-    description:       r.description != null ? String(r.description) : undefined,
-    date:              r.date != null ? String(r.date) : undefined,
-    time:              r.time != null ? String(r.time) : undefined,
-    priority:          (r.priority as Task['priority']) ?? 'medium',
-    status:            (r.status as Task['status']) ?? 'pending',
-    tags:              Array.isArray(r.tags) ? (r.tags as string[]) : [],
-    createdAt:         String(r.created_at ?? r.createdAt ?? new Date().toISOString()),
-    recurringGroupId:  r.recurring_group_id != null ? String(r.recurring_group_id) : undefined,
-    repeatDays:        Array.isArray(r.repeat_days) ? (r.repeat_days as number[]) as Task['repeatDays'] : undefined,
+    id: String(r.id),
+    title: String(r.title),
+    description: r.description != null ? String(r.description) : undefined,
+    date: r.date != null ? String(r.date) : undefined,
+    time: r.time != null ? String(r.time) : undefined,
+    priority: (r.priority as Task['priority']) ?? 'medium',
+    status: (r.status as Task['status']) ?? 'pending',
+    tags: Array.isArray(r.tags) ? (r.tags as string[]) : [],
+    createdAt: String(r.created_at ?? r.createdAt ?? new Date().toISOString()),
+    recurringGroupId: r.recurring_group_id != null ? String(r.recurring_group_id) : undefined,
+    repeatDays: Array.isArray(r.repeat_days) ? (r.repeat_days as number[]) as Task['repeatDays'] : undefined,
   };
 }
 
 function taskToRow(t: Task): Row {
   return {
-    id:                t.id,
-    title:             t.title,
-    description:       t.description ?? null,
-    date:              t.date ?? null,
-    time:              t.time ?? null,
-    priority:          t.priority,
-    status:            t.status,
-    tags:              t.tags,
-    created_at:        t.createdAt,
+    id: t.id,
+    title: t.title,
+    description: t.description ?? null,
+    date: t.date ?? null,
+    time: t.time ?? null,
+    priority: t.priority,
+    status: t.status,
+    tags: t.tags,
+    created_at: t.createdAt,
     recurring_group_id: t.recurringGroupId ?? null,
-    repeat_days:       t.repeatDays ?? null,
+    repeat_days: t.repeatDays ?? null,
   };
 }
 
 function txFromRow(r: Row): Transaction {
   return {
-    id:          String(r.id),
-    type:        r.type as Transaction['type'],
-    category:    r.category as Transaction['category'],
-    amount:      Number(r.amount),
+    id: String(r.id),
+    type: r.type as Transaction['type'],
+    category: r.category as Transaction['category'],
+    amount: Number(r.amount),
     description: String(r.description),
-    date:        String(r.date),
-    createdAt:   String(r.created_at ?? r.createdAt ?? new Date().toISOString()),
+    date: String(r.date),
+    createdAt: String(r.created_at ?? r.createdAt ?? new Date().toISOString()),
   };
 }
 
 function txToRow(t: Transaction): Row {
   return {
-    id:          t.id,
-    type:        t.type,
-    category:    t.category,
-    amount:      t.amount,
+    id: t.id,
+    type: t.type,
+    category: t.category,
+    amount: t.amount,
     description: t.description,
-    date:        t.date,
-    created_at:  t.createdAt,
+    date: t.date,
+    created_at: t.createdAt,
   };
 }
 
 function presetFromRow(r: Row): TimerPreset {
   return {
-    id:        String(r.id),
-    title:     String(r.title),
-    totalMs:   Number(r.total_ms),
-    emoji:     String(r.emoji),
+    id: String(r.id),
+    title: String(r.title),
+    totalMs: Number(r.total_ms),
+    emoji: String(r.emoji),
     isDefault: Boolean(r.is_default),
   };
 }
 
 function presetToRow(p: TimerPreset): Row {
   return {
-    id:         p.id,
-    title:      p.title,
-    total_ms:   p.totalMs,
-    emoji:      p.emoji,
+    id: p.id,
+    title: p.title,
+    total_ms: p.totalMs,
+    emoji: p.emoji,
     is_default: p.isDefault ?? false,
   };
 }
@@ -111,6 +112,7 @@ const DEFAULT_FINANCE_META: Omit<FinanceState, 'transactions'> = {
 // ─── Loading skeleton ─────────────────────────────────────────────────────────
 
 function LoadingSkeleton() {
+  const { t } = useLanguage();
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)' }}>
       <div style={{ textAlign: 'center', color: 'var(--muted)' }}>
@@ -120,7 +122,7 @@ function LoadingSkeleton() {
           margin: '0 auto 12px', animation: 'spin 0.8s linear infinite',
         }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        <div style={{ fontSize: '0.85rem' }}>Veriler yǬkleniyor…</div>
+        <div style={{ fontSize: '0.85rem' }}>{t.loadingData}</div>
       </div>
     </div>
   );
@@ -148,6 +150,7 @@ function ErrorBanner({ message }: { message: string }) {
 // ─── DB loading indicator (non-blocking) ─────────────────────────────────────
 
 function DbLoadingPill({ loading }: { loading: boolean }) {
+  const { t } = useLanguage();
   if (!loading) return null;
   return (
     <div style={{
@@ -156,7 +159,7 @@ function DbLoadingPill({ loading }: { loading: boolean }) {
       background: 'var(--surface-2)', borderRadius: '6px', border: '1px solid var(--border)',
     }}>
       <div style={{ width: '6px', height: '6px', borderRadius: '50%', border: '1.5px solid var(--muted)', borderTopColor: 'var(--accent)', animation: 'spin 0.8s linear infinite' }} />
-      Senkronize ediliyor
+      {t.syncing}
     </div>
   );
 }
@@ -164,8 +167,10 @@ function DbLoadingPill({ loading }: { loading: boolean }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function DashboardClient() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('overview');
   const [mounted, setMounted] = useState(false);
+  const [quickAddText, setQuickAddText] = useState('');
   useEffect(() => setMounted(true), []);
 
   // ── Calendar: still localStorage ──────────────────────────────────────────
@@ -248,7 +253,7 @@ export default function DashboardClient() {
     const existingIds = new Set(transactions.map(t => t.id));
     const added = state.transactions.filter(t => !existingIds.has(t.id));
     const removed = transactions.filter(t => !state.transactions.some(s => s.id === t.id));
-    
+
     for (const t of added) await insertTx(t);
     for (const t of removed) await deleteTxById(t.id);
   }, [transactions, insertTx, deleteTxById, setFinanceMeta]);
@@ -272,8 +277,8 @@ export default function DashboardClient() {
   if (!mounted) return <LoadingSkeleton />;
 
   const tabLabel: Record<string, string> = {
-    overview: 'Overview', calendar: 'Calendar',
-    tasks: 'Task Manager', finance: 'Finance', clock: 'Saat',
+    overview: t.tabOverview, calendar: t.tabCalendar,
+    tasks: t.tabTasks, finance: t.tabFinance, clock: t.tabClock,
   };
   const tabEmoji: Record<string, string> = {
     overview: '🏠', calendar: '🗓️', tasks: '📋', finance: '💰', clock: '⏱',
@@ -299,22 +304,148 @@ export default function DashboardClient() {
               {tabLabel[activeTab]}
             </h2>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
             <DbLoadingPill loading={tasksLoading || txLoading || presetsLoading} />
+
             <div style={{ display: 'flex', gap: '16px', fontSize: '0.78rem', color: 'var(--muted-2)' }}>
-              <span title="Bekleyen grevler">
-                <span style={{ color: '#f59e0b', fontWeight: 700 }}>{tasks.filter(t => t.status !== 'done').length}</span> grev
+              <span>
+                <span style={{ color: '#f59e0b', fontWeight: 700 }}>{tasks.filter(task => task.status !== 'done').length}</span> {t.pendingTasks}
               </span>
-              <span title="BugǬnǬn etkinlikleri">
+              <span>
                 <span style={{ color: '#06b6d4', fontWeight: 700 }}>
                   {events.filter(e => {
-                    const t = new Date();
-                    const today = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+                    const now = new Date();
+                    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
                     return e.date === today;
                   }).length}
-                </span> etkinlik
+                </span> {t.todayEvents}
               </span>
             </div>
+
+            {/* Quick Add Task Input */}
+            <div style={{ paddingLeft: '16px', borderLeft: '1px solid var(--border)', display: 'flex', alignItems: 'center' }}>
+              <input
+                type="text"
+                placeholder={t.quickAddPlaceholder}
+                value={quickAddText}
+                onChange={(e) => setQuickAddText(e.target.value)}
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter' && quickAddText.trim() !== '') {
+                    const tokens = quickAddText.split(/\s+/);
+                    let extractedPriority: Task['priority'] = 'medium';
+                    let extractedDate: string | null = null;
+                    let timeKeyword: 'sabah' | 'öğlen' | 'akşam' | 'gece' | null = null;
+                    let rawHour: number | null = null;
+                    let rawMinute: number = 0;
+                    const remainingTokens: string[] = [];
+
+                    const now = new Date();
+                    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                    const tomorrow = new Date(now);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
+                    for (const t of tokens) {
+                      const lower = t.toLowerCase();
+                      if (lower === 'yö') { extractedPriority = 'high'; continue; }
+                      if (lower === 'oo') { extractedPriority = 'medium'; continue; }
+                      if (lower === 'dö') { extractedPriority = 'low'; continue; }
+
+                      if (lower === 'bugün') { extractedDate = todayStr; continue; }
+                      if (lower === 'yarın') { extractedDate = tomorrowStr; continue; }
+
+                      // Check for time keywords
+                      // Check for time keywords
+                      if (['sabah', 'öğlen', 'akşam', 'gece'].includes(lower)) {
+                        timeKeyword = lower as 'sabah' | 'öğlen' | 'akşam' | 'gece';
+                        continue;
+                      }
+
+                      // Match exactly HH:MM where HH 0-23 and MM 0-59
+                      const timeRegex = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/;
+                      const timeMatch = t.match(timeRegex);
+                      if (rawHour === null && timeMatch) {
+                        rawHour = parseInt(timeMatch[1], 10);
+                        rawMinute = parseInt(timeMatch[2], 10);
+                        continue;
+                      }
+
+                      // Match standalone hour 0-24
+                      const hourRegex = /^([0-9]|1[0-9]|2[0-4])$/;
+                      const hourMatch = t.match(hourRegex);
+                      if (rawHour === null && hourMatch) {
+                        rawHour = parseInt(hourMatch[1], 10);
+                        rawMinute = 0;
+                        continue;
+                      }
+
+                      remainingTokens.push(t);
+                    }
+
+                    // Resolve Contextual Time Logic
+                    let finalTime: string | undefined = undefined;
+
+                    if (rawHour !== null) {
+                      let h = rawHour;
+                      if (timeKeyword === 'öğlen' && h >= 1 && h <= 5) {
+                        h += 12;
+                      } else if (timeKeyword === 'akşam' && h >= 5 && h <= 11) {
+                        h += 12;
+                      } else if (timeKeyword === 'gece') {
+                        if (h === 12) h = 0;
+                        else if (h === 11) h = 23;
+                      }
+
+                      // Safety wrapper
+                      if (h === 24) h = 0;
+
+                      finalTime = `${String(h).padStart(2, '0')}:${String(rawMinute).padStart(2, '0')}`;
+                    } else if (timeKeyword) {
+                      // Fallbacks if no number was given
+                      if (timeKeyword === 'sabah') finalTime = '09:00';
+                      else if (timeKeyword === 'öğlen') finalTime = '14:00';
+                      else if (timeKeyword === 'akşam') finalTime = '19:00';
+                      else if (timeKeyword === 'gece') finalTime = '23:00';
+                    }
+
+                    // Build final text
+                    const finalTitle = remainingTokens.join(' ').trim() || 'Yeni Görev';
+
+                    const newTask: Task = {
+                      id: Date.now().toString(),
+                      title: finalTitle,
+                      status: 'pending',
+                      priority: extractedPriority,
+                      tags: [],
+                      date: extractedDate || todayStr,
+                      time: finalTime,
+                      createdAt: now.toISOString()
+                    };
+                    await insertTask(newTask);
+                    setQuickAddText('');
+                  }
+                }}
+                style={{
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--foreground)',
+                  padding: '6px 12px',
+                  borderRadius: '20px',
+                  fontSize: '0.85rem',
+                  outline: 'none',
+                  minWidth: '200px',
+                  transition: 'border-color 0.2s'
+                }}
+                onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
+                onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
+              />
+            </div>
+
+            <div style={{ paddingLeft: '16px', borderLeft: '1px solid var(--border)', display: 'flex', alignItems: 'center' }}>
+              <LanguageToggle />
+            </div>
+
           </div>
         </header>
 

@@ -1,0 +1,1 @@
+export const DEFAULT_TRACKED_STOCKS = ['THYAO', 'EREGL', 'AAPL', 'MSFT', 'JEPI', 'JEPQ'];

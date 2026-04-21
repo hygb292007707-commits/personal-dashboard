@@ -2,7 +2,7 @@
 
 import React from 'react';
 import type { Task, CalendarEvent, FinanceState } from '../lib/types';
-
+import { useLanguage } from '@/lib/hooks/LanguageContext'; // Dosya yoluna dikkat et
 interface OverviewProps {
   tasks: Task[];
   events: CalendarEvent[]
@@ -47,9 +47,9 @@ function CircularRing({ pct, size, color, label }: CircularRingProps) {
   return (
     <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
       <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={strokeWidth} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={strokeWidth} />
         <circle
-          cx={size/2} cy={size/2} r={r}
+          cx={size / 2} cy={size / 2} r={r}
           fill="none"
           stroke={color}
           strokeWidth={strokeWidth}
@@ -70,25 +70,26 @@ function CircularRing({ pct, size, color, label }: CircularRingProps) {
 }
 
 export default function Overview({ tasks, events, finance, onTabChange }: OverviewProps) {
+  const { t, lang } = useLanguage();
   const today = formatDate(new Date());
   const now = new Date();
 
   // ── Task stats ──────────────────────────────────────────────
   const pendingTasks = tasks.filter(t => t.status !== 'done');
-  const todayTasks   = tasks.filter(t => t.date === today && t.status !== 'done');
-  const doneTasks    = tasks.filter(t => t.status === 'done');
+  const todayTasks = tasks.filter(t => t.date === today && t.status !== 'done');
+  const doneTasks = tasks.filter(t => t.status === 'done');
   const completionRate = tasks.length > 0 ? Math.round((doneTasks.length / tasks.length) * 100) : 0;
 
   // ── Productivity Score — this ISO week ──────────────────────
   const weekStart = getWeekStart(now);
-  const weekEnd   = new Date(weekStart);
+  const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 6);
   weekEnd.setHours(23, 59, 59, 999);
 
   const weekTasks = tasks.filter(t => {
     // Include tasks created this week OR due this week
     const created = new Date(t.createdAt);
-    const due     = t.date ? new Date(t.date + 'T12:00:00') : null;
+    const due = t.date ? new Date(t.date + 'T12:00:00') : null;
     return created >= weekStart || (due && due >= weekStart && due <= weekEnd);
   });
   const weekDone = weekTasks.filter(t => t.status === 'done').length;
@@ -96,7 +97,7 @@ export default function Overview({ tasks, events, finance, onTabChange }: Overvi
   const productivityColor = productivityScore >= 70 ? '#10b981' : productivityScore >= 40 ? '#f59e0b' : '#ef4444';
 
   // ── Calendar stats ──────────────────────────────────────────
-  const todayEvents    = events.filter(e => e.date === today).sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
+  const todayEvents = events.filter(e => e.date === today).sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
   const upcomingEvents = events.filter(e => e.date > today).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
 
   // ── Finance stats ───────────────────────────────────────────
@@ -104,12 +105,12 @@ export default function Overview({ tasks, events, finance, onTabChange }: Overvi
     const d = new Date(t.date + 'T12:00:00');
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
-  const monthIncome  = thisMonthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const monthIncome = thisMonthTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const monthExpense = thisMonthTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
 
   // ── Greeting ────────────────────────────────────────────────
   const hour = now.getHours();
-  const greeting = hour < 12 ? 'Günaydın' : hour < 17 ? 'İyi Günler' : 'İyi Akşamlar';
+  const greeting = hour < 12 ? t.goodMorning : hour < 17 ? t.goodAfternoon : t.goodEvening;
 
   return (
     <div style={{ animation: 'fadeInUp 0.3s ease' }}>
@@ -119,8 +120,8 @@ export default function Overview({ tasks, events, finance, onTabChange }: Overvi
           {greeting}! 👋
         </h1>
         <p style={{ color: 'var(--muted-2)', marginTop: '6px', fontSize: '0.9rem' }}>
-          {now.toLocaleDateString('tr-TR', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
-          {todayTasks.length > 0 && ` · Bugün ${todayTasks.length} görev var`}
+          {now.toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+          {todayTasks.length > 0 && ` · ${t.todayTasksCount.replace('{count}', todayTasks.length.toString())}`}
         </p>
       </div>
 
@@ -141,13 +142,13 @@ export default function Overview({ tasks, events, finance, onTabChange }: Overvi
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                ✅ Görevler
+                {t.tasksTitle}
               </div>
               <div style={{ fontSize: '2.2rem', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--accent)' }}>
                 {pendingTasks.length}
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--muted-2)', marginTop: '4px' }}>
-                bekliyor · %{completionRate} tamamlandı
+                {t.waiting} · {lang === 'tr' ? '%' : ''}{completionRate}{lang === 'en' ? '%' : ''} {t.completed}
               </div>
             </div>
             <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(108,99,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
@@ -176,16 +177,16 @@ export default function Overview({ tasks, events, finance, onTabChange }: Overvi
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                🎯 Verimlilik Skoru
+                {t.productivityScoreTitle}
               </div>
               <div style={{ fontSize: '2.2rem', fontWeight: 800, letterSpacing: '-0.04em', color: productivityColor }}>
-                %{productivityScore}
+                {lang === 'tr' ? '%' : ''}{productivityScore}{lang === 'en' ? '%' : ''}
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--muted-2)', marginTop: '4px' }}>
-                {weekTasks.length > 0 ? `Bu hafta: ${weekDone}/${weekTasks.length} tamamlandı` : 'Bu hafta görev yok'}
+                {weekTasks.length > 0 ? `${t.thisWeek}: ${weekDone}/${weekTasks.length} ${t.completed}` : t.noTasksThisWeek}
               </div>
             </div>
-            <CircularRing pct={productivityScore} size={60} color={productivityColor} label="Bu Hafta" />
+            <CircularRing pct={productivityScore} size={60} color={productivityColor} label={t.thisWeekLabel} />
           </div>
         </div>
 
@@ -203,13 +204,13 @@ export default function Overview({ tasks, events, finance, onTabChange }: Overvi
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                📅 Bugünkü Etkinlikler
+                {t.todayEventsTitle}
               </div>
               <div style={{ fontSize: '2.2rem', fontWeight: 800, letterSpacing: '-0.04em', color: '#06b6d4' }}>
                 {todayEvents.length}
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--muted-2)', marginTop: '4px' }}>
-                {upcomingEvents.length} yaklaşan
+                {upcomingEvents.length} {t.upcoming}
               </div>
             </div>
             <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(6,182,212,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
@@ -232,13 +233,13 @@ export default function Overview({ tasks, events, finance, onTabChange }: Overvi
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                ⬆ Bu Ay Gelir
+                {t.thisMonthIncome}
               </div>
               <div style={{ fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#10b981' }}>
                 {fmt(monthIncome)}
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--muted-2)', marginTop: '4px' }}>
-                {thisMonthTx.filter(t => t.type === 'income').length} işlem
+                {thisMonthTx.filter(t => t.type === 'income').length} {t.transaction}
               </div>
             </div>
             <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
@@ -262,13 +263,13 @@ export default function Overview({ tasks, events, finance, onTabChange }: Overvi
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                ⬇ Bu Ay Gider
+                {t.thisMonthExpense}
               </div>
               <div style={{ fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#ef4444' }}>
                 {fmt(monthExpense)}
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--muted-2)', marginTop: '4px' }}>
-                {thisMonthTx.filter(t => t.type === 'expense').length} işlem
+                {thisMonthTx.filter(t => t.type === 'expense').length} {t.transaction}
               </div>
             </div>
             <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(239,68,68,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
@@ -283,10 +284,10 @@ export default function Overview({ tasks, events, finance, onTabChange }: Overvi
 
         {/* Today's events */}
         <div style={{ padding: '20px', borderRadius: '14px', background: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '14px' }}>📅 Bugünkü Program</div>
+          <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '14px' }}>{t.todaySchedule}</div>
           {todayEvents.length === 0 ? (
             <div style={{ color: 'var(--muted)', fontSize: '0.82rem', padding: '12px 0', textAlign: 'center' }}>
-              Bugün etkinlik yok
+              {t.noEventsToday}
             </div>
           ) : (
             todayEvents.map(ev => (
@@ -302,7 +303,7 @@ export default function Overview({ tasks, events, finance, onTabChange }: Overvi
           {upcomingEvents.length > 0 && (
             <>
               <div style={{ fontSize: '0.68rem', color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600, margin: '12px 0 8px' }}>
-                Yaklaşan
+                {t.upcomingSection}
               </div>
               {upcomingEvents.map(ev => (
                 <div key={ev.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', padding: '8px 12px', borderRadius: '8px', background: 'var(--surface-2)', opacity: 0.75 }}>
@@ -310,7 +311,7 @@ export default function Overview({ tasks, events, finance, onTabChange }: Overvi
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 500, fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</div>
                     <div style={{ fontSize: '0.68rem', color: 'var(--muted)' }}>
-                      {new Date(ev.date + 'T12:00:00').toLocaleDateString('tr-TR', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      {new Date(ev.date + 'T12:00:00').toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </div>
                   </div>
                 </div>
@@ -321,7 +322,7 @@ export default function Overview({ tasks, events, finance, onTabChange }: Overvi
 
         {/* Priority Tasks */}
         <div style={{ padding: '20px', borderRadius: '14px', background: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '14px' }}>🔥 Öncelikli Görevler</div>
+          <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '14px' }}>{t.priorityTasksTitle}</div>
           {pendingTasks
             .sort((a, b) => { const order = { high: 0, medium: 1, low: 2 }; return order[a.priority] - order[b.priority]; })
             .slice(0, 5)
@@ -332,7 +333,7 @@ export default function Overview({ tasks, events, finance, onTabChange }: Overvi
                   <div style={{ fontWeight: 600, fontSize: '0.82rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
                   {task.date && (
                     <div style={{ fontSize: '0.7rem', color: 'var(--muted)', marginTop: '1px' }}>
-                      {new Date(task.date + 'T12:00:00').toLocaleDateString('tr-TR', { month: 'short', day: 'numeric' })}
+                      {new Date(task.date + 'T12:00:00').toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { month: 'short', day: 'numeric' })}
                       {task.time ? ` · ${task.time}` : ''}
                     </div>
                   )}
@@ -343,13 +344,13 @@ export default function Overview({ tasks, events, finance, onTabChange }: Overvi
                   color: task.priority === 'high' ? '#ef4444' : task.priority === 'medium' ? '#f59e0b' : '#10b981',
                   textTransform: 'uppercase',
                 }}>
-                  {task.priority === 'high' ? 'Yüksek' : task.priority === 'medium' ? 'Orta' : 'Düşük'}
+                  {task.priority === 'high' ? t.high : task.priority === 'medium' ? t.medium : t.low}
                 </span>
               </div>
             ))}
           {pendingTasks.length === 0 && (
             <div style={{ color: 'var(--muted)', fontSize: '0.82rem', padding: '12px 0', textAlign: 'center' }}>
-              🎉 Harika! Bekleyen görev yok.
+              {t.allDoneMessage}
             </div>
           )}
         </div>

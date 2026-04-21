@@ -2,8 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-// Eski statik kartı sildik, yerine senin gerçek kartını (MarketCard) çağırdık.
 import MarketCard from './MarketCard';
+import { useLanguage } from '@/lib/hooks/LanguageContext';
 
 interface SidebarProps {
   activeTab: string;
@@ -48,31 +48,34 @@ const ClockIcon = () => (
   </svg>
 );
 
+const StockIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+    <polyline points="17 6 23 6 23 12" />
+  </svg>
+);
+
 // ─── Nav items (tab-based, within the main dashboard SPA) ─────────────────────
 
-const tabNavItems = [
-  { id: 'overview', label: 'Overview', icon: <DashboardIcon /> },
-  { id: 'calendar', label: 'Calendar', icon: <CalendarIcon /> },
-  { id: 'tasks', label: 'Tasks', icon: <TaskIcon /> },
-  { id: 'finance', label: 'Finance', icon: <FinanceIcon /> },
-];
 
 // ─── Live clock in sidebar header ────────────────────────────────────────────
 
 function LiveClock() {
+  const { lang } = useLanguage();
+  const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
   const [time, setTime] = React.useState<string | null>(null);
   const [date, setDate] = React.useState<string>('');
 
   React.useEffect(() => {
     const update = () => {
       const now = new Date();
-      setTime(now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
-      setDate(now.toLocaleDateString('tr-TR', { weekday: 'long', month: 'long', day: 'numeric' }));
+      setTime(now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }));
+      setDate(now.toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' }));
     };
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [locale]);
 
   if (time === null) return null; // avoid SSR mismatch
 
@@ -98,6 +101,15 @@ function LiveClock() {
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 
 export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
+  const { t } = useLanguage();
+
+  const tabNavItems = [
+    { id: 'overview', label: t.tabOverview, icon: <DashboardIcon /> },
+    { id: 'calendar', label: t.tabCalendar, icon: <CalendarIcon /> },
+    { id: 'tasks',    label: t.tabTasks,    icon: <TaskIcon /> },
+    { id: 'finance',  label: t.tabFinance,  icon: <FinanceIcon /> },
+  ];
+
   return (
     <aside style={{
       width: '240px',
@@ -125,7 +137,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           </div>
           <div>
             <div style={{ fontWeight: 700, fontSize: '1rem', letterSpacing: '-0.02em' }}>PersonalOS</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--muted)', marginTop: '1px' }}>Dijital çalışma alanınız</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--muted)', marginTop: '1px' }}>{t.tagline}</div>
           </div>
         </div>
       </div>
@@ -140,7 +152,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           letterSpacing: '0.1em', textTransform: 'uppercase',
           padding: '0 12px', marginBottom: '6px',
         }}>
-          Navigasyon
+          {t.navigation}
         </div>
 
         {/* Tab-based nav items */}
@@ -212,7 +224,39 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           }}
         >
           <span style={{ opacity: 0.6, flexShrink: 0 }}><ClockIcon /></span>
-          Saat
+          {t.clockNav}
+          <span style={{ marginLeft: 'auto', fontSize: '0.62rem', color: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '4px', padding: '1px 5px' }}>
+            ↗
+          </span>
+        </Link>
+        
+        {/* Stocks — links to /stocks route */}
+        <Link
+          href="/stocks"
+          id="nav-stocks"
+          style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            width: '100%', padding: '10px 12px', borderRadius: '8px',
+            border: 'none', textDecoration: 'none',
+            background: 'transparent',
+            color: 'var(--muted-2)',
+            fontWeight: 400, fontSize: '0.875rem',
+            transition: 'all 200ms ease',
+            marginBottom: '2px',
+          }}
+          onMouseEnter={e => {
+            const el = e.currentTarget as HTMLAnchorElement;
+            el.style.background = 'rgba(108,99,255,0.12)';
+            el.style.color = 'var(--accent-2)';
+          }}
+          onMouseLeave={e => {
+            const el = e.currentTarget as HTMLAnchorElement;
+            el.style.background = 'transparent';
+            el.style.color = 'var(--muted-2)';
+          }}
+        >
+          <span style={{ opacity: 0.6, flexShrink: 0 }}><StockIcon /></span>
+          {t.marketNav}
           <span style={{ marginLeft: 'auto', fontSize: '0.62rem', color: 'var(--muted)', border: '1px solid var(--border)', borderRadius: '4px', padding: '1px 5px' }}>
             ↗
           </span>
@@ -226,7 +270,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
           letterSpacing: '0.1em', textTransform: 'uppercase',
           padding: '0 12px', marginBottom: '8px',
         }}>
-          Piyasa (Live)
+          {t.marketLiveSection}
         </div>
         <MarketCard />
       </div>
@@ -237,7 +281,7 @@ export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
       {/* Footer */}
       <div style={{ padding: '14px 20px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{ fontSize: '0.68rem', color: 'var(--muted)', textAlign: 'center' }}>
-          Veriler Supabase üzerinden çekilir
+          {t.dataViaSupabase}
         </div>
       </div>
     </aside>

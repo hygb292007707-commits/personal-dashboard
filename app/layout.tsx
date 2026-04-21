@@ -1,37 +1,28 @@
-import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
-import './globals.css';
+import './globals.css'
+import { LanguageProvider } from '@/lib/hooks/LanguageContext'
+// EĞER BURADA "import LanguageToggle..." VARSA ONU DA SİLEBİLİRSİN
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
-
-export const metadata: Metadata = {
-  title: 'PersonalOS — Your Private Dashboard',
-  description:
-    'A beautiful personal dashboard with calendar, task management with NLP parsing, and finance tracking. All data stored locally in your browser.',
-  keywords: ['dashboard', 'productivity', 'calendar', 'tasks', 'finance', 'personal'],
-};
+export const metadata = {
+  title: 'Personal Dashboard',
+  description: 'Mali Kontrol ve Dashboard',
+}
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable}`}
-    >
+    <html lang="tr">
       <body>
-        {children}
+        {/* Tüm siteyi LanguageProvider ile sarıyoruz */}
+        <LanguageProvider>
+
+          {/* Sitenin geri kalan içeriği (Buton artık sadece bunun içinde yaşıyor) */}
+          {children}
+
+        </LanguageProvider>
       </body>
     </html>
-  );
+  )
 }
