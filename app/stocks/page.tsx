@@ -27,20 +27,20 @@ function formatVolume(vol: number) {
 
 export default function StocksPage() {
   const [trackedStocks, setTrackedStocks] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return ['THYAO', 'AAPL', 'JEPI'];
+    if (typeof window === 'undefined') return [];
     try {
       const saved = localStorage.getItem('trackedStocks');
-      return saved ? JSON.parse(saved) : ['THYAO', 'AAPL', 'JEPI'];
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return ['THYAO', 'AAPL', 'JEPI'];
+      return [];
     }
   });
-  const [symbol, setSymbol] = useState('THYAO');
+  const [symbol, setSymbol] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [days, setDays] = useState(30);
   const [customDaysInput, setCustomDaysInput] = useState('');
   const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currency, setCurrency] = useState<'TRY' | 'USD'>('TRY');
   const [exchangeRate, setExchangeRate] = useState<number>(1);
@@ -50,6 +50,8 @@ export default function StocksPage() {
 
   useEffect(() => {
     let active = true;
+
+    if (!symbol) return;
 
     async function fetchHistorical() {
       setLoading(true);
@@ -83,7 +85,18 @@ export default function StocksPage() {
     return () => { active = false; };
   }, [symbol, days]);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    const saved = (() => {
+      try {
+        const raw = localStorage.getItem('trackedStocks');
+        return raw ? (JSON.parse(raw) as string[]) : [];
+      } catch {
+        return [];
+      }
+    })();
+    if (saved.length > 0) setSymbol(saved[0]);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('trackedStocks', JSON.stringify(trackedStocks));
@@ -359,6 +372,25 @@ export default function StocksPage() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', flex: 1 }}>
+        {!symbol ? (
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: '16px',
+            minHeight: '400px',
+          }}>
+            <div style={{ textAlign: 'center', color: 'var(--muted)' }}>
+              <div style={{ fontSize: '3rem', marginBottom: '16px' }}>📈</div>
+              <div style={{ fontSize: '1rem', fontWeight: 600, maxWidth: '320px', lineHeight: 1.5 }}>
+                {t.emptyStateMessage}
+              </div>
+            </div>
+          </div>
+        ) : (<>
         <div style={{
           background: 'var(--surface)',
           border: '1px solid var(--border)',
@@ -481,6 +513,7 @@ export default function StocksPage() {
             </table>
           </div>
         </div>
+        </>)}
       </div>
     </div>
   );

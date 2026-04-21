@@ -80,6 +80,7 @@ const tr = {
   colChange:              'Değişim',
   fetchError:             'Veri alınamadı',
   connectionError:        'Bağlantı hatası',
+  emptyStateMessage:      'Veri görüntülemek için bir sembol arayın veya seçin.',
 };
 
 const en: typeof tr = {
@@ -162,6 +163,7 @@ const en: typeof tr = {
   colChange:              'Change',
   fetchError:             'Could not fetch data',
   connectionError:        'Connection error',
+  emptyStateMessage:      'Please search for a symbol or select one to view data.',
 };
 
 export const dictionaries = { tr, en };
